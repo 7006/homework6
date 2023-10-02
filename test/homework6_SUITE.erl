@@ -11,6 +11,7 @@
     test_insert_and_lookup/1,
     test_lookup_unknown_key/1,
     test_auto_cleaning/1,
+    test_initial_stats/1,
     test_stats/1
 ]).
 
@@ -25,6 +26,7 @@ all() ->
         test_insert_and_lookup,
         test_lookup_unknown_key,
         test_auto_cleaning,
+        test_initial_stats,
         test_stats
     ].
 
@@ -77,8 +79,19 @@ test_lookup_unknown_key(_) ->
 test_auto_cleaning(_) ->
     ok = homework6:create(my_cache),
     ok = homework6:insert(my_cache, k, v, 1),
+
     timer:sleep(?two_second),
+
     undefined = homework6:lookup(my_cache, k).
+
+test_initial_stats(_) ->
+    ok = homework6:create(my_cache),
+
+    Pid = ets:info(my_cache, owner),
+    Stats = homework6_cache_worker:stats(Pid),
+
+    0 = maps:get(run_at, Stats),
+    0 = maps:get(total_runs, Stats).
 
 test_stats(_) ->
     ok = homework6:create(my_cache),
