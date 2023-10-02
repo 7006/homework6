@@ -30,19 +30,12 @@ all() ->
 
 -define(one_second, 1_000).
 -define(two_second, 2_000).
--define(ten_second, 10_000).
 -define(one_minute, 60_000).
 
 init_per_testcase(test_auto_cleaning, Config) ->
     ok = application:start(homework6),
     ok = application:set_env(homework6, cleanup_interval, ?one_second),
     Config;
-init_per_testcase(test_stats, Config) ->
-    ok = application:set_env(homework6, cleanup_interval, ?ten_second, [{persistent}]),
-    ok = application:start(homework6),
-    ok = homework6:create(my_cache),
-    Pid = ets:info(my_cache, owner),
-    [{pid, Pid} | Config];
 init_per_testcase(_, Config) ->
     ok = application:start(homework6),
     Config.
@@ -87,16 +80,18 @@ test_auto_cleaning(_) ->
     timer:sleep(?two_second),
     undefined = homework6:lookup(my_cache, k).
 
-test_stats(Config) ->
-    Cleanup = fun() ->
-        Pid = ?config(pid, Config),
+test_stats(_) ->
+    ok = homework6:create(my_cache),
+
+    Stats = fun() ->
         timer:sleep(?one_second),
+        Pid = ets:info(my_cache, owner),
         Pid ! cleanup,
         homework6_cache_worker:stats(Pid)
     end,
 
-    #{run_at := {{_, _, _}, {_, _, RunAt1}}, total_runs := TotalRuns1} = Cleanup(),
-    #{run_at := {{_, _, _}, {_, _, RunAt2}}, total_runs := TotalRuns2} = Cleanup(),
+    #{run_at := {{Year, Month, Day}, {Hour, Minute, Second1}}, total_runs := TotalRuns1} = Stats(),
+    #{run_at := {{Year, Month, Day}, {Hour, Minute, Second2}}, total_runs := TotalRuns2} = Stats(),
 
-    true = RunAt2 > RunAt1,
+    true = Second2 > Second1,
     1 = TotalRuns2 - TotalRuns1.
