@@ -34,8 +34,8 @@ all() ->
 -define(one_minute, 60_000).
 
 init_per_testcase(test_auto_cleaning, Config) ->
-    ok = application:set_env(homework6, cleanup_interval, ?one_second, [{persistent}]),
     ok = application:start(homework6),
+    ok = application:set_env(homework6, cleanup_interval, ?one_second),
     Config;
 init_per_testcase(test_stats, Config) ->
     ok = application:set_env(homework6, cleanup_interval, ?ten_second, [{persistent}]),
@@ -47,6 +47,10 @@ init_per_testcase(_, Config) ->
     ok = application:start(homework6),
     Config.
 
+end_per_testcase(test_auto_cleaning, Config) ->
+    ok = application:set_env(homework6, cleanup_interval, ?one_minute),
+    ok = application:stop(homework6),
+    Config;
 end_per_testcase(_, Config) ->
     ok = application:stop(homework6),
     Config.
